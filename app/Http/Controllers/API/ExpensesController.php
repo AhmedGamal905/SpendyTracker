@@ -3,7 +3,11 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ExpenseResource;
+use App\Models\Category;
+use App\Models\Expense;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class ExpensesController extends Controller
 {
@@ -12,15 +16,13 @@ class ExpensesController extends Controller
      */
     public function index()
     {
-        //
-    }
+        $userId = auth()->user()->id;
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        $expenses = Expense::query()
+            ->where('user_id', $userId)
+            ->paginate(10);
+
+        return ExpenseResource::collection($expenses);
     }
 
     /**
@@ -28,23 +30,35 @@ class ExpensesController extends Controller
      */
     public function store(Request $request)
     {
-        //
-    }
+        $userId = auth()->user()->id;
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        $request->validate([
+            'category_id' => ['required', 'exists:categories,id'],
+            'amount' => ['required', 'numeric'],
+            'description' => ['nullable', 'string', 'max:255'],
+        ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
+        $category = Category::findOrFail($request->category_id);
+
+        if ($category->user_id !== $userId) {
+            return response()->json([
+                'status' => 'fail',
+                'message' => 'Unauthorized to use this category.',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $expense = Expense::create([
+            'user_id' => $userId,
+            'category_id' => $request->category_id,
+            'amount' => $request->amount,
+            'description' => $request->description,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'expense saved successfully.',
+            'data' => $expense,
+        ], Response::HTTP_CREATED);
     }
 
     /**
@@ -52,7 +66,36 @@ class ExpensesController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $userId = auth()->user()->id;
+
+        $expense = Expense::findOrFail($id);
+
+        $request->validate([
+            'category_id' => ['required', 'exists:categories,id'],
+            'amount' => ['required', 'numeric'],
+            'description' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $category = Category::findOrFail($request->category_id);
+
+        if ($expense->user_id !== $userId || $category->user_id !== $userId) {
+            return response()->json([
+                'status' => 'fail',
+                'message' => 'Unauthorized to update this expense.',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $expense->update([
+            'category_id' => $request->category_id,
+            'amount' => $request->amount,
+            'description' => $request->description,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Expense updated successfully.',
+            'data' => $expense,
+        ]);
     }
 
     /**
@@ -60,6 +103,19 @@ class ExpensesController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $userId = auth()->user()->id;
+
+        $expense = Expense::findOrFail($id);
+
+        if ($expense->user_id !== $userId) {
+            return response()->json([
+                'status' => 'fail',
+                'message' => 'Unauthorized to delete this expense.',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $expense->delete();
+
+        return response()->noContent();
     }
 }

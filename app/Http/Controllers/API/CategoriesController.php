@@ -3,7 +3,11 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CategoryResource;
+use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule as ValidationRule;
+use Symfony\Component\HttpFoundation\Response;
 
 class CategoriesController extends Controller
 {
@@ -12,15 +16,13 @@ class CategoriesController extends Controller
      */
     public function index()
     {
-        //
-    }
+        $userId = auth()->user()->id;
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        $categories = Category::query()
+            ->where('user_id', $userId)
+            ->get();
+
+        return CategoryResource::collection($categories);
     }
 
     /**
@@ -28,23 +30,22 @@ class CategoriesController extends Controller
      */
     public function store(Request $request)
     {
-        //
-    }
+        $userId = auth()->user()->id;
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        $request->validate([
+            'name' => ['required', 'string', 'max:25', ValidationRule::unique('categories', 'name')->where('user_id', $userId)],
+        ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
+        $category = Category::create([
+            'user_id' => $userId,
+            'name' => $request->name,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Category saved successfully.',
+            'data' => $category,
+        ], Response::HTTP_CREATED);
     }
 
     /**
@@ -52,7 +53,28 @@ class CategoriesController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $userId = auth()->user()->id;
+
+        $category = Category::findOrFail($id);
+
+        $request->validate([
+            'name' => ['required', 'string', 'max:25', ValidationRule::unique('categories', 'name')->where('user_id', $userId)],
+        ]);
+
+        if ($category->user_id !== $userId) {
+            return response()->json([
+                'status' => 'fail',
+                'message' => 'Unauthorized to update this category.',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $category->update(['name' => $request->name]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Category updated successfully.',
+            'data' => $category,
+        ]);
     }
 
     /**
@@ -60,6 +82,19 @@ class CategoriesController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $userId = auth()->user()->id;
+
+        $category = Category::findOrFail($id);
+
+        if ($category->user_id !== $userId) {
+            return response()->json([
+                'status' => 'fail',
+                'message' => 'Unauthorized to delete this category.',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $category->delete();
+
+        return response()->noContent();
     }
 }

@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\IncomeResource;
+use App\Models\Income;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class IncomesController extends Controller
 {
@@ -12,15 +15,13 @@ class IncomesController extends Controller
      */
     public function index()
     {
-        //
-    }
+        $userId = auth()->user()->id;
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        $incomes = Income::query()
+            ->where('user_id', $userId)
+            ->paginate(10);
+
+        return IncomeResource::collection($incomes);
     }
 
     /**
@@ -28,23 +29,24 @@ class IncomesController extends Controller
      */
     public function store(Request $request)
     {
-        //
-    }
+        $request->validate([
+            'source' => ['required', 'string', 'max:255'],
+            'amount' => ['required', 'numeric'],
+            'description' => ['nullable', 'string', 'max:255'],
+        ]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        $income = Income::create([
+            'user_id' => auth()->user()->id,
+            'source' => $request->source,
+            'amount' => $request->amount,
+            'description' => $request->description,
+        ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Income saved successfully.',
+            'data' => $income,
+        ], Response::HTTP_CREATED);
     }
 
     /**
@@ -52,7 +54,35 @@ class IncomesController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $userId = auth()->user()->id;
+
+        $income = Income::findOrFail($id);
+
+        $request->validate([
+            'source' => ['required', 'string', 'max:255'],
+            'amount' => ['required', 'numeric'],
+            'description' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        if ($income->user_id !== $userId) {
+            return response()->json([
+                'status' => 'fail',
+                'message' => 'Unauthorized to update this income.',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $income->update([
+            'user_id' => $userId,
+            'source' => $request->source,
+            'amount' => $request->amount,
+            'description' => $request->description,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Income updated successfully.',
+            'data' => $income,
+        ]);
     }
 
     /**
@@ -60,6 +90,19 @@ class IncomesController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $userId = auth()->user()->id;
+
+        $income = Income::findOrFail($id);
+
+        if ($income->user_id !== $userId) {
+            return response()->json([
+                'status' => 'fail',
+                'message' => 'Unauthorized to delete this income.',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $income->delete();
+
+        return response()->noContent();
     }
 }
