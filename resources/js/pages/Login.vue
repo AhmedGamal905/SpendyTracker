@@ -1,0 +1,3 @@
+<template>
+    <login-component />
+</template>
