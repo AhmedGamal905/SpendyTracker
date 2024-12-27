@@ -20,6 +20,8 @@ class ExpensesController extends Controller
 
         $expenses = Expense::query()
             ->where('user_id', $userId)
+            ->with('category')
+            ->latest()
             ->paginate(10);
 
         return ExpenseResource::collection($expenses);
@@ -117,5 +119,19 @@ class ExpensesController extends Controller
         $expense->delete();
 
         return response()->noContent();
+    }
+
+    /**
+     * Display a listing of the resource based on the id of a category.
+     */
+    public function expensesByCategory($categoryId)
+    {
+        $expenses = Expense::query()
+            ->where('category_id', $categoryId)
+            ->with('category')
+            ->latest()
+            ->paginate(10);
+
+        return ExpenseResource::collection($expenses);
     }
 }

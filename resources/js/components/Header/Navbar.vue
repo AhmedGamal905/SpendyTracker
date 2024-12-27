@@ -2,7 +2,9 @@
 import { useRouter } from 'vue-router';
 import { useUserStore } from '../../stores/user';
 import { computed } from 'vue';
+import { useToast } from 'vue-toast-notification';
 
+const toast = useToast();
 const router = useRouter();
 
 const userStore = useUserStore();
@@ -16,9 +18,10 @@ const handleLogout = async () => {
         userStore.clearUser();
 
         router.push('/login');
+
+        toast.success('Logged out successfully!');
     } catch (error) {
-        console.error('Error signing out:', error);
-        alert('Failed to sign out. Please try again.');
+        toast.error('Failed to sign out. Please try again.');
     }
 };
 </script>
@@ -222,6 +225,13 @@ const handleLogout = async () => {
                                 to="/income"
                             >
                                 Income
+                            </router-link>
+                            <router-link
+                                v-if="user"
+                                class="py-1.5 px-2 inline-flex items-center gap-x-2 text-sm font-medium rounded-md border border-transparent text-white hover:text-white/80 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:bg-white/10"
+                                to="/categories"
+                            >
+                                categories
                             </router-link>
                             <router-link
                                 v-if="user"

@@ -21,4 +21,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::resource('categories', CategoriesController::class)->except('create', 'show', 'edit');
     Route::resource('incomes', IncomesController::class)->except('create', 'show', 'edit');
     Route::resource('expenses', ExpensesController::class)->except('create', 'show', 'edit');
+    Route::get('categories/{categoryId}/expenses', [ExpensesController::class, 'expensesByCategory']);
 });

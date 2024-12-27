@@ -10,7 +10,10 @@ onMounted(() => {
 </script>
 
 <template>
-    <nav-bar />
-    <router-view />
-    <footer-component />
+    <div class="min-h-screen flex flex-col">
+        <nav-bar />
+        <router-view class="flex-1 min-h-screen" />
+
+        <footer-component />
+    </div>
 </template>

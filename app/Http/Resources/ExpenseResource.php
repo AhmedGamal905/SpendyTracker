@@ -19,10 +19,13 @@ class ExpenseResource extends JsonResource
                 'id' => $this->id,
                 'user_id' => $this->user_id,
                 'category_id' => $this->category_id,
+                'category_name' => $this->whenLoaded('category', function () {
+                    return $this->category->name;
+                }),
                 'amount' => $this->amount,
                 'description' => $this->description,
-                'created_at' => $this->created_at,
-                'updated_at' => $this->updated_at,
+                'created_at' => $this->created_at->format('j M Y, g:i a'),
+                'updated_at' => $this->updated_at->format('j M Y, g:i a'),
             ];
     }
 }

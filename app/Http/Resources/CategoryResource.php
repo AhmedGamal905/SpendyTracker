@@ -19,8 +19,8 @@ class CategoryResource extends JsonResource
                 'id' => $this->id,
                 'user_id' => $this->user_id,
                 'name' => $this->name,
-                'created_at' => $this->created_at,
-                'updated_at' => $this->updated_at,
+                'created_at' => $this->created_at->format('j M Y, g:i a'),
+                'updated_at' => $this->updated_at->format('j M Y, g:i a'),
             ];
     }
 }

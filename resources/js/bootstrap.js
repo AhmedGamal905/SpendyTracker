@@ -1,10 +1,9 @@
 import axios from 'axios';
+import router from './router';
 
 window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-
-window.axios.defaults.baseURL = 'https://spendytracker.test';
 
 axios.interceptors.request.use(config => {
     const token = localStorage.getItem('authToken');
@@ -21,7 +20,7 @@ axios.interceptors.response.use(response => {
 }, error => {
     if (error.response && error.response.status === 401) {
         localStorage.clear();
-        //router.push('/login');
+        router.push('/login');
     }
     return Promise.reject(error);
 });

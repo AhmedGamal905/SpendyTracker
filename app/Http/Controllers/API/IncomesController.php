@@ -19,6 +19,7 @@ class IncomesController extends Controller
 
         $incomes = Income::query()
             ->where('user_id', $userId)
+            ->latest()
             ->paginate(10);
 
         return IncomeResource::collection($incomes);

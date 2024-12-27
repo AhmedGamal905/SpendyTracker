@@ -15,4 +15,18 @@ router.afterEach((to, from, failure) => {
     }
 });
 
+router.beforeEach((to, from, next) => {
+    if (to.meta.requiresAuth) {
+        const token = localStorage.getItem('authToken');
+
+        if (!token) {
+            next({ name: 'Login' });
+        } else {
+            next();
+        }
+    } else {
+        next();
+    }
+});
+
 export default router;
