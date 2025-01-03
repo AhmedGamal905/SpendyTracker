@@ -44,7 +44,7 @@ class CategoriesController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Category saved successfully.',
-            'data' => $category,
+            'data' => new CategoryResource($category),
         ], Response::HTTP_CREATED);
     }
 
@@ -73,7 +73,7 @@ class CategoriesController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Category updated successfully.',
-            'data' => $category,
+            'data' => new CategoryResource($category),
         ]);
     }
 

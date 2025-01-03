@@ -59,7 +59,7 @@ class ExpensesController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'expense saved successfully.',
-            'data' => $expense,
+            'data' => new ExpenseResource($expense),
         ], Response::HTTP_CREATED);
     }
 
@@ -96,7 +96,7 @@ class ExpensesController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Expense updated successfully.',
-            'data' => $expense,
+            'data' => new ExpenseResource($expense),
         ]);
     }
 

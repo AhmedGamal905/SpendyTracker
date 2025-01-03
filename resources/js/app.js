@@ -10,12 +10,16 @@ import Navbar from './components/Header/Navbar.vue';
 import Layout from './layout/layout.vue';
 import router from './router/index';
 import Footer from './components/Header/Footer.vue';
+import Dialog from './components/Models/Dialog.vue';
+import Delete from './components/Buttons/Delete.vue';
 
 const app = createApp({});
 
 app.component('nav-bar', Navbar);
 app.component('layout-component', Layout);
 app.component('footer-component', Footer);
+app.component('dialog-component', Dialog);
+app.component('deleteButton-component', Delete);
 
 app.use(router);
 app.use(createPinia());

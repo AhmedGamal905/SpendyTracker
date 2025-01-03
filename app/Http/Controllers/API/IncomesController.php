@@ -46,7 +46,7 @@ class IncomesController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Income saved successfully.',
-            'data' => $income,
+            'data' => new IncomeResource($income),
         ], Response::HTTP_CREATED);
     }
 
@@ -82,7 +82,7 @@ class IncomesController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Income updated successfully.',
-            'data' => $income,
+            'data' => new IncomeResource($income),
         ]);
     }
 
