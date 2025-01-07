@@ -5,9 +5,16 @@ import { useToast } from 'vue-toast-notification';
 import { JellyfishLoader } from 'vue3-spinner';
 
 const loading = ref(false);
+const categories = ref([]);
+const createForm = ref({ name: '' });
+const updateForm = ref({ id: '', name: '' });
+const showUpdateForm = ref(false);
+const showCreateForm = ref(false);
 
 const toast = useToast();
-const categories = ref([]);
+
+const isCreateFormValid = computed(() => createForm.value.name);
+const isUpdateFormValid = computed(() => updateForm.value.name);
 
 onMounted(async () => {
     loading.value = true;
@@ -28,7 +35,7 @@ const handleDelete = async (categoryId) => {
     try {
         await axios.delete(`/api/categories/${categoryId}`);
         categories.value = categories.value.filter((category) => category.id !== categoryId);
-        toast.success(`Category was deleted!`);
+        toast.success('Category was deleted!');
     } catch (error) {
         if (error.response) {
             toast.error(error.response.data.message || 'Something went wrong');
@@ -38,27 +45,33 @@ const handleDelete = async (categoryId) => {
     }
 };
 
-const createForm = ref({
-    name: '',
-});
+const toggleCreateForm = () => {
+    showCreateForm.value = !showCreateForm.value;
+    showUpdateForm.value = false;
+};
 
-const isFormValid = computed(() => {
-    return createForm.value.name;
-});
+const prepareFormForUpdate = (category) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    updateForm.value.name = category.name;
+    updateForm.value.id = category.id;
+    showUpdateForm.value = true;
+    showCreateForm.value = false;
+};
 
 const createCategory = async () => {
     if (!createForm.value.name) {
         toast.error('Please fill in all fields!');
         return;
     }
+
     loading.value = true;
-    const formData = {
-        name: createForm.value.name,
-    };
+    const formData = { name: createForm.value.name };
+
     try {
         const response = await axios.post('/api/categories', formData);
         categories.value.push(response.data.data);
         createForm.value.name = '';
+        showCreateForm.value = false;
         toast.success('New category saved!');
     } catch (error) {
         if (error.response) {
@@ -68,12 +81,63 @@ const createCategory = async () => {
         loading.value = false;
     }
 };
+
+const updateCategory = async () => {
+    if (!updateForm.value.name || !updateForm.value.id) {
+        toast.error('Please fill in all fields or select a valid resource to update!');
+        return;
+    }
+
+    loading.value = true;
+    const formData = { name: updateForm.value.name };
+
+    try {
+        const response = await axios.put(`/api/categories/${updateForm.value.id}`, formData);
+        categories.value = categories.value.map((category) =>
+            category.id === updateForm.value.id ? response.data.data : category,
+        );
+        updateForm.value.name = '';
+        updateForm.value.id = '';
+        showUpdateForm.value = false;
+        toast.success('Category updated!');
+    } catch (error) {
+        if (error.response) {
+            toast.error(error.response.data.message || 'Something went wrong');
+        }
+    } finally {
+        loading.value = false;
+    }
+};
 </script>
+
 <template>
     <div v-if="loading" class="flex items-center justify-center min-h-screen">
         <JellyfishLoader :color="'#FFFFFF'" :scale="2" />
     </div>
     <div v-else>
+        <div class="p-10" v-if="showUpdateForm">
+            <form @submit.prevent="updateCategory">
+                <label for="name" class="block text-sm my-2 dark:text-white">New name</label>
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    v-model="updateForm.name"
+                    :placeholder="updateForm.name || 'New category name'"
+                    class="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                    maxlength="255"
+                    required
+                />
+                <button
+                    type="button"
+                    class="my-5 py-2 px-3 block w-full text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+                    @click.prevent="updateCategory"
+                    :disabled="!isUpdateFormValid"
+                >
+                    Save new changes
+                </button>
+            </form>
+        </div>
         <div class="flex flex-wrap justify-between items-center gap-2 mx-2">
             <div>
                 <h1 class="text-lg md:text-xl font-semibold text-stone-800 dark:text-neutral-200">Your categories</h1>
@@ -82,7 +146,7 @@ const createCategory = async () => {
                 <button
                     type="button"
                     class="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:ring-2 focus:ring-green-500"
-                    data-hs-overlay="#hs-basic-modal"
+                    @click.prevent="toggleCreateForm"
                 >
                     <svg
                         class="hidden sm:block shrink-0 size-3.5"
@@ -103,84 +167,28 @@ const createCategory = async () => {
                 </button>
             </div>
         </div>
-
-        <div
-            id="hs-basic-modal"
-            class="hs-overlay hidden size-full fixed top-0 start-0 z-[60] overflow-x-hidden overflow-y-auto pointer-events-none"
-            role="dialog"
-            tabindex="-1"
-            aria-labelledby="hs-basic-modal-label"
-        >
-            <div
-                class="hs-overlay-open:opacity-100 hs-overlay-open:duration-500 opacity-0 transition-all sm:max-w-lg sm:w-full m-3 sm:mx-auto"
-            >
-                <div
-                    class="flex flex-col bg-white border shadow-sm rounded-xl pointer-events-auto dark:bg-neutral-800 dark:border-neutral-700 dark:shadow-neutral-700/70"
+        <div class="p-10" v-if="showCreateForm">
+            <form @submit.prevent="createCategory">
+                <label for="name" class="block text-sm my-2 dark:text-white">New category</label>
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    v-model="createForm.name"
+                    placeholder="New category name"
+                    class="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                    maxlength="255"
+                    required
+                />
+                <button
+                    type="button"
+                    class="my-5 py-2 px-3 block w-full text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+                    @click.prevent="createCategory"
+                    :disabled="!isCreateFormValid"
                 >
-                    <div class="flex justify-between items-center py-3 px-4 border-b dark:border-neutral-700">
-                        <h3 id="hs-basic-modal-label" class="font-bold text-gray-800 dark:text-white">
-                            Add a new category
-                        </h3>
-                        <button
-                            type="button"
-                            class="flex justify-center items-center size-7 text-sm font-semibold rounded-full border border-transparent text-gray-800 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none dark:text-white dark:hover:bg-neutral-700 dark:focus:bg-neutral-700"
-                            aria-label="Close"
-                            data-hs-overlay="#hs-basic-modal"
-                        >
-                            <svg
-                                class="shrink-0 size-4"
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                            >
-                                <path d="M18 6 6 18"></path>
-                                <path d="m6 6 12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                    <form>
-                        <div class="p-4 overflow-y-auto">
-                            <label for="name" class="block text-sm my-2 dark:text-white">Name</label>
-                            <div class="relative">
-                                <input
-                                    type="text"
-                                    id="name"
-                                    name="name"
-                                    v-model="createForm.name"
-                                    placeholder="Name"
-                                    class="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-                                    maxlength="255"
-                                    required
-                                />
-                            </div>
-                        </div>
-                        <div class="flex justify-end items-center gap-x-2 py-3 px-4 border-t dark:border-neutral-700">
-                            <button
-                                type="button"
-                                class="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 shadow-sm hover:bg-gray-50 focus:outline-none focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-700 dark:focus:bg-neutral-700"
-                                data-hs-overlay="#hs-basic-modal"
-                            >
-                                Close
-                            </button>
-
-                            <button
-                                type="button"
-                                class="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
-                                @click.prevent="createCategory"
-                                :disabled="!isFormValid"
-                            >
-                                Save changes
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+                    Save
+                </button>
+            </form>
         </div>
         <div class="overflow-x-hidden w-full flex items-start justify-center">
             <div v-if="categories.length === 0" class="text-center py-6">
@@ -212,7 +220,14 @@ const createCategory = async () => {
                             </span>
                         </div>
                     </router-link>
-                    <p class="mt-1 text-xs text-gray-400 whitespace-nowrap">{{ category.created_at }}</p>
+                    <p class="mt-1 px-5 text-xs text-gray-400 whitespace-nowrap">{{ category.created_at }}</p>
+                    <button
+                        type="submit"
+                        @click.prevent="prepareFormForUpdate(category)"
+                        class="py-2 px-3 inline-flex items-center gap-x-2 text-xs font-medium rounded-lg border border-stone-200 bg-white text-green-500 shadow-sm hover:bg-stone-50 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:bg-stone-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-green-500 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700"
+                    >
+                        Update
+                    </button>
                     <div class="pl-5">
                         <deleteButton-component :id="category.id" @delete="handleDelete" />
                     </div>

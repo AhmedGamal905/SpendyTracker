@@ -7,8 +7,7 @@ const user = computed(() => userStore.user);
 </script>
 
 <template>
-    
-    <h2 v-if="user" class=" pl-2 text-2xl text-gray-800 font-bold sm:text-3xl dark:text-neutral-200">
+    <h2 v-if="user" class="pl-2 text-2xl text-gray-800 font-bold sm:text-3xl dark:text-neutral-200">
         Welcome back, {{ user.name }}!
     </h2>
     <!-- Features -->

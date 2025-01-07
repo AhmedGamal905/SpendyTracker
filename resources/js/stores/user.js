@@ -20,5 +20,8 @@ export const useUserStore = defineStore('user', {
             localStorage.removeItem('user');
             localStorage.removeItem('authToken');
         },
+        isAuthenticated() {
+            return this.user !== null && this.token !== null;
+        },
     },
 });

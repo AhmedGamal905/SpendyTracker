@@ -1,12 +1,13 @@
 // Pages
-import Index from '../pages/Index.vue';
-import Income from '../pages/Income.vue';
-import Login from '../pages/Login.vue';
-import Register from '../pages/Register.vue';
-import Expense from '../pages/Expense.vue';
-import Error from '../pages/Error.vue';
 import Categories from '../pages/Categories.vue';
 import CategoryExpenses from '../pages/CategoryExpenses.vue';
+import Error from '../pages/Error.vue';
+import Expense from '../pages/Expense.vue';
+import Income from '../pages/Income.vue';
+import Index from '../pages/Index.vue';
+import Login from '../pages/Login.vue';
+import Register from '../pages/Register.vue';
+import { useUserStore } from '../stores/user';
 
 const routes = [
     {
@@ -15,34 +16,50 @@ const routes = [
         component: Index,
     },
     {
-        path: "/login",
+        path: '/login',
         name: 'Login',
         component: Login,
+        beforeEnter: (to, from, next) => {
+            const userStore = useUserStore();
+            if (userStore.isAuthenticated()) {
+                next({ name: 'Home' });
+            } else {
+                next();
+            }
+        },
     },
     {
-        path: "/register",
+        path: '/register',
         name: 'Register',
         component: Register,
+        beforeEnter: (to, from, next) => {
+            const userStore = useUserStore();
+            if (userStore.isAuthenticated()) {
+                next({ name: 'Home' });
+            } else {
+                next();
+            }
+        },
     },
     {
-        path: "/income",
+        path: '/income',
         component: Income,
         meta: { requiresAuth: true },
     },
     {
-        path: "/expense",
+        path: '/expense',
         name: 'Expense',
         component: Expense,
         meta: { requiresAuth: true },
     },
     {
-        path: "/categories",
+        path: '/categories',
         name: 'categories',
         component: Categories,
         meta: { requiresAuth: true },
     },
     {
-        path: "/category/:id/expenses",
+        path: '/category/:id/expenses',
         name: 'CategoryExpenses',
         component: CategoryExpenses,
         meta: { requiresAuth: true },

@@ -7,11 +7,33 @@ import { JellyfishLoader } from 'vue3-spinner';
 
 const loading = ref(false);
 
-const toast = useToast();
 const expenses = ref([]);
 const route = useRoute();
 const categories = ref([]);
 const categoryId = route.params.id;
+const nextPage = ref('');
+const showUpdateForm = ref(false);
+const showCreateForm = ref(false);
+const updateForm = ref({
+    id: '',
+    category_id: '',
+    amount: '',
+    description: '',
+});
+const createForm = ref({
+    amount: '',
+    description: '',
+});
+
+const toast = useToast();
+
+const isUpdateFormValid = computed(() => {
+    return updateForm.value.category_id && updateForm.value.amount && updateForm.value.description;
+});
+
+const isCreateFormValid = computed(() => {
+    return createForm.value.amount && createForm.value.description;
+});
 
 onMounted(async () => {
     loading.value = true;
@@ -20,6 +42,7 @@ onMounted(async () => {
         const categoriesResponse = await axios.get('/api/categories');
         expenses.value = response.data.data;
         categories.value = categoriesResponse.data.data;
+        nextPage.value = response.data.links.next;
     } catch (error) {
         if (error.response) {
             toast.error(error.response.data.message || 'Something went wrong! Try to refresh');
@@ -44,14 +67,10 @@ const handleDelete = async (expenseId) => {
     }
 };
 
-const createForm = ref({
-    amount: '',
-    description: '',
-});
-
-const isFormValid = computed(() => {
-    return createForm.value.amount && createForm.value.description;
-});
+const toggleCreateForm = () => {
+    showCreateForm.value = !showCreateForm.value;
+    showUpdateForm.value = false;
+};
 
 const createExpense = async () => {
     if (!createForm.value.amount || !createForm.value.description) {
@@ -69,7 +88,79 @@ const createExpense = async () => {
         expenses.value.push(response.data.data);
         createForm.value.amount = '';
         createForm.value.description = '';
+        showCreateForm.value = false;
         toast.success('New income saved!');
+    } catch (error) {
+        if (error.response) {
+            toast.error(error.response.data.message || 'Something went wrong');
+        }
+    } finally {
+        loading.value = false;
+    }
+};
+const loadMore = async () => {
+    loading.value = true;
+    try {
+        if (nextPage.value) {
+            const response = await axios.get(`${nextPage.value}`);
+            expenses.value.push(...response.data.data);
+            nextPage.value = response.data.links.next;
+        } else {
+            toast.error('no next page');
+        }
+    } catch (error) {
+        if (error.response) {
+            toast.error(error.response.data.message || 'Something went wrong! Try to refresh');
+        }
+    } finally {
+        loading.value = false;
+    }
+};
+
+const prepareFormForUpdate = (expense) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    updateForm.value.id = expense.id;
+    updateForm.value.category_id = expense.category_id;
+    updateForm.value.amount = expense.amount;
+    updateForm.value.description = expense.description;
+    showUpdateForm.value = true;
+};
+
+const updateExpense = async () => {
+    if (
+        !updateForm.value.id ||
+        !updateForm.value.amount ||
+        !updateForm.value.category_id ||
+        !updateForm.value.description
+    ) {
+        toast.error('Please fill in all fields or select a valid resource to update!');
+        return;
+    }
+
+    loading.value = true;
+    const formData = {
+        category_id: updateForm.value.category_id,
+        amount: updateForm.value.amount,
+        description: updateForm.value.description,
+    };
+
+    try {
+        const response = await axios.put(`/api/expenses/${updateForm.value.id}`, formData);
+
+        if (response.data.data.category_id != categoryId) {
+            expenses.value = expenses.value.filter((expense) => expense.id !== updateForm.value.id);
+        } else {
+            expenses.value = expenses.value.map((expense) =>
+                expense.id === updateForm.value.id ? response.data.data : expense,
+            );
+        }
+
+        updateForm.value.id = '';
+        updateForm.value.category_id = '';
+        updateForm.value.amount = '';
+        updateForm.value.description = '';
+        showUpdateForm.value = false;
+        toast.success('Expense updated!');
     } catch (error) {
         if (error.response) {
             toast.error(error.response.data.message || 'Something went wrong');
@@ -85,6 +176,55 @@ const createExpense = async () => {
     </div>
 
     <div v-else class="overflow-x-hidden w-full">
+        <div v-if="showUpdateForm" class="p-10">
+            <form>
+                <label for="category" class="block text-sm my-2 dark:text-white">Category</label>
+                <div class="relative">
+                    <select
+                        id="category"
+                        v-model="updateForm.category_id"
+                        class="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                        required
+                    >
+                        <option value="" disabled>Select Category</option>
+                        <option v-for="category in categories" :key="category.id" :value="category.id">
+                            {{ category.name }}
+                        </option>
+                    </select>
+                </div>
+                <label for="amount" class="block text-sm my-2 dark:text-white">Amount</label>
+                <input
+                    type="number"
+                    id="amount"
+                    name="amount"
+                    v-model="updateForm.amount"
+                    :placeholder="updateForm.amount || '00.0'"
+                    class="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                    maxlength="255"
+                    min="0"
+                    required
+                />
+                <label for="description" class="block text-sm my-2 dark:text-white">Description</label>
+                <input
+                    type="text"
+                    id="description"
+                    name="description"
+                    v-model="updateForm.description"
+                    :placeholder="updateForm.description || 'New expense description'"
+                    class="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                    maxlength="255"
+                    required
+                />
+                <button
+                    type="button"
+                    class="my-5 py-2 px-3 block w-full text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+                    @click.prevent="updateExpense"
+                    :disabled="!isUpdateFormValid"
+                >
+                    Save new changes
+                </button>
+            </form>
+        </div>
         <div class="flex flex-wrap justify-between items-center gap-2 mx-2">
             <div>
                 <h1 class="text-lg md:text-xl font-semibold text-stone-800 dark:text-neutral-200">Your Expenses</h1>
@@ -93,7 +233,7 @@ const createExpense = async () => {
                 <button
                     type="button"
                     class="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:ring-2 focus:ring-green-500"
-                    data-hs-overlay="#hs-basic-modal"
+                    @click.prevent="toggleCreateForm"
                 >
                     <svg
                         class="hidden sm:block shrink-0 size-3.5"
@@ -115,95 +255,40 @@ const createExpense = async () => {
             </div>
         </div>
 
-        <div
-            id="hs-basic-modal"
-            class="hs-overlay hidden size-full fixed top-0 start-0 z-[60] overflow-x-hidden overflow-y-auto pointer-events-none"
-            role="dialog"
-            tabindex="-1"
-            aria-labelledby="hs-basic-modal-label"
-        >
-            <div
-                class="hs-overlay-open:opacity-100 hs-overlay-open:duration-500 opacity-0 transition-all sm:max-w-lg sm:w-full m-3 sm:mx-auto"
-            >
-                <div
-                    class="flex flex-col bg-white border shadow-sm rounded-xl pointer-events-auto dark:bg-neutral-800 dark:border-neutral-700 dark:shadow-neutral-700/70"
+        <div v-if="showCreateForm" class="p-10">
+            <form>
+                <label for="amount" class="block text-sm my-2 dark:text-white">Amount</label>
+                <input
+                    type="number"
+                    id="amount"
+                    name="amount"
+                    v-model="createForm.amount"
+                    placeholder="00.0"
+                    class="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                    maxlength="255"
+                    min="0"
+                    required
+                />
+                <label for="description" class="block text-sm my-2 dark:text-white">Description</label>
+                <input
+                    type="text"
+                    id="description"
+                    name="description"
+                    v-model="createForm.description"
+                    placeholder="New expense description"
+                    class="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                    maxlength="255"
+                    required
+                />
+                <button
+                    type="button"
+                    class="my-5 py-2 px-3 block w-full text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+                    @click.prevent="createExpense"
+                    :disabled="!isCreateFormValid"
                 >
-                    <div class="flex justify-between items-center py-3 px-4 border-b dark:border-neutral-700">
-                        <h3 id="hs-basic-modal-label" class="font-bold text-gray-800 dark:text-white">
-                            Add a new income
-                        </h3>
-                        <button
-                            type="button"
-                            class="flex justify-center items-center size-7 text-sm font-semibold rounded-full border border-transparent text-gray-800 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none dark:text-white dark:hover:bg-neutral-700 dark:focus:bg-neutral-700"
-                            aria-label="Close"
-                            data-hs-overlay="#hs-basic-modal"
-                        >
-                            <svg
-                                class="shrink-0 size-4"
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                            >
-                                <path d="M18 6 6 18"></path>
-                                <path d="m6 6 12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                    <form>
-                        <div class="p-4 overflow-y-auto">
-                            <label for="amount" class="block text-sm my-2 dark:text-white">Amount</label>
-                            <div class="relative">
-                                <input
-                                    type="number"
-                                    id="amount"
-                                    name="amount"
-                                    v-model="createForm.amount"
-                                    placeholder="$0.00"
-                                    class="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-                                    required
-                                />
-                            </div>
-                            <label for="description" class="block text-sm my-2 dark:text-white">Description</label>
-                            <div class="relative">
-                                <input
-                                    type="text"
-                                    id="description"
-                                    name="description"
-                                    v-model="createForm.description"
-                                    placeholder="Description"
-                                    class="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-                                    maxlength="255"
-                                    required
-                                />
-                            </div>
-                        </div>
-                        <div class="flex justify-end items-center gap-x-2 py-3 px-4 border-t dark:border-neutral-700">
-                            <button
-                                type="button"
-                                class="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 shadow-sm hover:bg-gray-50 focus:outline-none focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-700 dark:focus:bg-neutral-700"
-                                data-hs-overlay="#hs-basic-modal"
-                            >
-                                Close
-                            </button>
-
-                            <button
-                                type="button"
-                                class="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
-                                @click.prevent="createExpense"
-                                :disabled="!isFormValid"
-                            >
-                                Save changes
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+                    Save
+                </button>
+            </form>
         </div>
         <div v-if="expenses.length === 0" class="text-center py-6">
             <p class="text-xl font-semibold text-gray-500 dark:text-neutral-400">Nothing to show here</p>
@@ -323,14 +408,13 @@ const createExpense = async () => {
                         </div>
                     </td>
                     <td class="size-px whitespace-nowrap px-4 py-1">
-                        <form>
-                            <button
-                                type="submit"
-                                class="py-2 px-3 inline-flex items-center gap-x-2 text-xs font-medium rounded-lg border border-stone-200 bg-white text-green-500 shadow-sm hover:bg-stone-50 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:bg-stone-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-green-500 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700"
-                            >
-                                Update
-                            </button>
-                        </form>
+                        <button
+                            @click.prevent="prepareFormForUpdate(expense)"
+                            type="submit"
+                            class="py-2 px-3 inline-flex items-center gap-x-2 text-xs font-medium rounded-lg border border-stone-200 bg-white text-green-500 shadow-sm hover:bg-stone-50 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:bg-stone-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-green-500 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700"
+                        >
+                            Update
+                        </button>
                     </td>
                     <td class="size-px whitespace-nowrap px-4 py-1">
                         <deleteButton-component :id="expense.id" @delete="handleDelete" />
@@ -338,5 +422,14 @@ const createExpense = async () => {
                 </tr>
             </tbody>
         </table>
+        <div v-if="nextPage" class="flex justify-center py-4">
+            <button
+                type="button"
+                class="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+                @click.prevent="loadMore"
+            >
+                Load more
+            </button>
+        </div>
     </div>
 </template>
