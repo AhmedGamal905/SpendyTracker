@@ -20,8 +20,6 @@
     </head>
 
     <body>
-        <div id="app">
-            <layout-component />
-        </div>
+        <div id="app"></div>
     </body>
 </html>

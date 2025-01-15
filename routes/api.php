@@ -14,7 +14,12 @@ Route::get('/user', function (Request $request) {
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'generateToken']);
     Route::post('/register', [AuthController::class, 'register']);
-    Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::delete('/delete', [AuthController::class, 'deleteAccount']);
+        Route::put('/update', [AuthController::class, 'updateProfile']);
+        Route::post('/change-password', [AuthController::class, 'updatePassword']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+    });
 });
 
 Route::middleware('auth:sanctum')->group(function () {

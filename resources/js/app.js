@@ -6,21 +6,8 @@ import 'vue-toast-notification/dist/theme-sugar.css';
 import { vue3Spinner } from 'vue3-spinner';
 import '../css/app.css';
 import './bootstrap';
-import Delete from './components/Buttons/Delete.vue';
-import Footer from './components/Header/Footer.vue';
-import Navbar from './components/Header/Navbar.vue';
-import Layout from './layout/layout.vue';
+import './interceptors/index.js';
+import App from './pages/App.vue';
 import router from './router/index';
 
-const app = createApp({});
-
-app.component('nav-bar', Navbar);
-app.component('layout-component', Layout);
-app.component('footer-component', Footer);
-app.component('deleteButton-component', Delete);
-
-app.use(router);
-app.use(createPinia());
-app.use(ToastPlugin);
-app.use(vue3Spinner);
-app.mount('#app');
+createApp(App).use(router).use(createPinia()).use(ToastPlugin).use(vue3Spinner).mount('#app');

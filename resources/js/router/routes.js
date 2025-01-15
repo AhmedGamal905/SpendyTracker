@@ -6,6 +6,7 @@ import Expense from '../pages/Expense.vue';
 import Income from '../pages/Income.vue';
 import Index from '../pages/Index.vue';
 import Login from '../pages/Login.vue';
+import Profile from '../pages/Profile.vue';
 import Register from '../pages/Register.vue';
 import { useUserStore } from '../stores/user';
 
@@ -40,6 +41,12 @@ const routes = [
                 next();
             }
         },
+    },
+    {
+        path: '/profile',
+        name: 'Profile',
+        component: Profile,
+        meta: { requiresAuth: true },
     },
     {
         path: '/income',

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { computed, onMounted, ref } from 'vue';
 import { useToast } from 'vue-toast-notification';
 import { JellyfishLoader } from 'vue3-spinner';
+import Delete from '../components/Buttons/Delete.vue';
 
 const loading = ref(false);
 const categories = ref([]);
@@ -16,33 +17,29 @@ const toast = useToast();
 const isCreateFormValid = computed(() => createForm.value.name);
 const isUpdateFormValid = computed(() => updateForm.value.name);
 
-onMounted(async () => {
+onMounted(() => {
     loading.value = true;
-    try {
-        const response = await axios.get('/api/categories');
-        categories.value = response.data.data;
-    } catch (error) {
-        if (error.response) {
-            toast.error(error.response.data.message || 'Something went wrong! Try to refresh');
-        }
-    } finally {
-        loading.value = false;
-    }
+    axios
+        .get('/api/categories')
+        .then((response) => {
+            categories.value = response.data.data;
+        })
+        .finally(() => {
+            loading.value = false;
+        });
 });
 
-const handleDelete = async (categoryId) => {
+const handleDelete = (categoryId) => {
     loading.value = true;
-    try {
-        await axios.delete(`/api/categories/${categoryId}`);
-        categories.value = categories.value.filter((category) => category.id !== categoryId);
-        toast.success('Category was deleted!');
-    } catch (error) {
-        if (error.response) {
-            toast.error(error.response.data.message || 'Something went wrong');
-        }
-    } finally {
-        loading.value = false;
-    }
+    axios
+        .delete(`/api/categories/${categoryId}`)
+        .then(() => {
+            categories.value = categories.value.filter((category) => category.id !== categoryId);
+            toast.success('Category was deleted!');
+        })
+        .finally(() => {
+            loading.value = false;
+        });
 };
 
 const toggleCreateForm = () => {
@@ -58,7 +55,7 @@ const prepareFormForUpdate = (category) => {
     showCreateForm.value = false;
 };
 
-const createCategory = async () => {
+const createCategory = () => {
     if (!createForm.value.name) {
         toast.error('Please fill in all fields!');
         return;
@@ -67,22 +64,20 @@ const createCategory = async () => {
     loading.value = true;
     const formData = { name: createForm.value.name };
 
-    try {
-        const response = await axios.post('/api/categories', formData);
-        categories.value.push(response.data.data);
-        createForm.value.name = '';
-        showCreateForm.value = false;
-        toast.success('New category saved!');
-    } catch (error) {
-        if (error.response) {
-            toast.error(error.response.data.message || 'Something went wrong');
-        }
-    } finally {
-        loading.value = false;
-    }
+    axios
+        .post('/api/categories', formData)
+        .then((response) => {
+            categories.value.push(response.data.data);
+            createForm.value.name = '';
+            showCreateForm.value = false;
+            toast.success('New category saved!');
+        })
+        .finally(() => {
+            loading.value = false;
+        });
 };
 
-const updateCategory = async () => {
+const updateCategory = () => {
     if (!updateForm.value.name || !updateForm.value.id) {
         toast.error('Please fill in all fields or select a valid resource to update!');
         return;
@@ -91,22 +86,20 @@ const updateCategory = async () => {
     loading.value = true;
     const formData = { name: updateForm.value.name };
 
-    try {
-        const response = await axios.put(`/api/categories/${updateForm.value.id}`, formData);
-        categories.value = categories.value.map((category) =>
-            category.id === updateForm.value.id ? response.data.data : category,
-        );
-        updateForm.value.name = '';
-        updateForm.value.id = '';
-        showUpdateForm.value = false;
-        toast.success('Category updated!');
-    } catch (error) {
-        if (error.response) {
-            toast.error(error.response.data.message || 'Something went wrong');
-        }
-    } finally {
-        loading.value = false;
-    }
+    axios
+        .put(`/api/categories/${updateForm.value.id}`, formData)
+        .then((response) => {
+            categories.value = categories.value.map((category) =>
+                category.id === updateForm.value.id ? response.data.data : category,
+            );
+            updateForm.value.name = '';
+            updateForm.value.id = '';
+            showUpdateForm.value = false;
+            toast.success('Category updated!');
+        })
+        .finally(() => {
+            loading.value = false;
+        });
 };
 </script>
 
@@ -229,7 +222,7 @@ const updateCategory = async () => {
                         Update
                     </button>
                     <div class="pl-5">
-                        <deleteButton-component :id="category.id" @delete="handleDelete" />
+                        <Delete :id="category.id" @delete="handleDelete" />
                     </div>
                 </li>
             </ul>

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { onMounted, ref, computed } from 'vue';
 import { useToast } from 'vue-toast-notification';
 import { JellyfishLoader } from 'vue3-spinner';
+import Delete from '../components/Buttons/Delete.vue';
 
 const loading = ref(false);
 const incomes = ref([]);
@@ -31,37 +32,33 @@ const isUpdateFormValid = computed(() => {
     return updateForm.value.source && updateForm.value.amount && updateForm.value.description;
 });
 
-onMounted(async () => {
+onMounted(() => {
     loading.value = true;
-    try {
-        const response = await axios.get('/api/incomes');
-        incomes.value = response.data.data;
-        nextPage.value = response.data.links.next;
-    } catch (error) {
-        if (error.response) {
-            toast.error(error.response.data.message || 'Something went wrong! Try to refresh');
-        }
-    } finally {
-        loading.value = false;
-    }
+    axios
+        .get('/api/incomes')
+        .then((response) => {
+            incomes.value = response.data.data;
+            nextPage.value = response.data.links.next;
+        })
+        .finally(() => {
+            loading.value = false;
+        });
 });
 
-const handleDelete = async (incomeId) => {
+const handleDelete = (incomeId) => {
     loading.value = true;
-    try {
-        await axios.delete(`/api/incomes/${incomeId}`);
-        incomes.value = incomes.value.filter((income) => income.id !== incomeId);
-        toast.success(`The selected income was deleted!`);
-    } catch (error) {
-        if (error.response) {
-            toast.error(error.response.data.message || 'Something went wrong');
-        }
-    } finally {
-        loading.value = false;
-    }
+    axios
+        .delete(`/api/incomes/${incomeId}`)
+        .then(() => {
+            incomes.value = incomes.value.filter((income) => income.id !== incomeId);
+            toast.success(`The selected income was deleted!`);
+        })
+        .finally(() => {
+            loading.value = false;
+        });
 };
 
-const createIncome = async () => {
+const createIncome = () => {
     if (!createForm.value.source || !createForm.value.amount || !createForm.value.description) {
         toast.error('Please fill in all fields!');
         return;
@@ -72,38 +69,35 @@ const createIncome = async () => {
         amount: createForm.value.amount,
         description: createForm.value.description,
     };
-    try {
-        const response = await axios.post('/api/incomes', formData);
-        incomes.value.push(response.data.data);
-        createForm.value.source = '';
-        createForm.value.amount = '';
-        createForm.value.description = '';
-        showCreateForm.value = false;
-        toast.success('New income saved!');
-    } catch (error) {
-        if (error.response) {
-            toast.error(error.response.data.message || 'Something went wrong');
-        }
-    } finally {
-        loading.value = false;
-    }
+    axios
+        .post('/api/incomes', formData)
+        .then((response) => {
+            incomes.value.push(response.data.data);
+            createForm.value.source = '';
+            createForm.value.amount = '';
+            createForm.value.description = '';
+            showCreateForm.value = false;
+            toast.success('New income saved!');
+        })
+        .finally(() => {
+            loading.value = false;
+        });
 };
 
-const loadMore = async () => {
+const loadMore = () => {
     loading.value = true;
-    try {
-        if (nextPage.value) {
-            const response = await axios.get(`${nextPage.value}`);
-            incomes.value.push(...response.data.data);
-            nextPage.value = response.data.links.next;
-        } else {
-            toast.error('no next page');
-        }
-    } catch (error) {
-        if (error.response) {
-            toast.error(error.response.data.message || 'Something went wrong! Try to refresh');
-        }
-    } finally {
+    if (nextPage.value) {
+        axios
+            .get(`${nextPage.value}`)
+            .then((response) => {
+                incomes.value.push(...response.data.data);
+                nextPage.value = response.data.links.next;
+            })
+            .finally(() => {
+                loading.value = false;
+            });
+    } else {
+        toast.error('No next page');
         loading.value = false;
     }
 };
@@ -123,38 +117,33 @@ const prepareFormForUpdate = (income) => {
     showCreateForm.value = false;
 };
 
-const updateIncome = async () => {
+const updateIncome = () => {
     if (!updateForm.value.id || !updateForm.value.source || !updateForm.value.amount || !updateForm.value.description) {
         toast.error('Please fill in all fields or select a valid resource to update!');
         return;
     }
-
     loading.value = true;
-
     const formData = {
         source: updateForm.value.source,
         amount: updateForm.value.amount,
         description: updateForm.value.description,
     };
-
-    try {
-        const response = await axios.put(`/api/incomes/${updateForm.value.id}`, formData);
-        incomes.value = incomes.value.map((income) =>
-            income.id === updateForm.value.id ? response.data.data : income,
-        );
-        updateForm.value.id = '';
-        updateForm.value.source = '';
-        updateForm.value.amount = '';
-        updateForm.value.description = '';
-        showUpdateForm.value = false;
-        toast.success('Income updated!');
-    } catch (error) {
-        if (error.response) {
-            toast.error(error.response.data.message || 'Something went wrong');
-        }
-    } finally {
-        loading.value = false;
-    }
+    axios
+        .put(`/api/incomes/${updateForm.value.id}`, formData)
+        .then((response) => {
+            incomes.value = incomes.value.map((income) =>
+                income.id === updateForm.value.id ? response.data.data : income,
+            );
+            updateForm.value.id = '';
+            updateForm.value.source = '';
+            updateForm.value.amount = '';
+            updateForm.value.description = '';
+            showUpdateForm.value = false;
+            toast.success('Income updated!');
+        })
+        .finally(() => {
+            loading.value = false;
+        });
 };
 </script>
 
@@ -427,7 +416,7 @@ const updateIncome = async () => {
                         </button>
                     </td>
                     <td class="size-px whitespace-nowrap px-4 py-1">
-                        <deleteButton-component :id="income.id" @delete="handleDelete" />
+                        <Delete :id="income.id" @delete="handleDelete" />
                     </td>
                 </tr>
             </tbody>

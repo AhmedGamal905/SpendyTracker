@@ -1,6 +1,8 @@
 <script setup>
 import { onMounted } from 'vue';
 import { HSStaticMethods } from 'preline';
+import Navbar from '../components/Header/Navbar.vue';
+import Footer from '../components/Header/Footer.vue';
 
 onMounted(() => {
     setTimeout(() => {
@@ -11,9 +13,9 @@ onMounted(() => {
 
 <template>
     <div class="min-h-screen flex flex-col">
-        <nav-bar />
+        <Navbar />
         <router-view class="flex-1 min-h-screen" />
 
-        <footer-component />
+        <Footer />
     </div>
 </template>

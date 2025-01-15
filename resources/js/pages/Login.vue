@@ -17,29 +17,28 @@ const form = ref({
 
 const loading = ref(false);
 
-const handleSubmit = async () => {
+const handleSubmit = () => {
     loading.value = true;
     const userData = {
         email: form.value.email,
         password: form.value.password,
     };
-    try {
-        const response = await axios.post('/api/auth/login', userData);
-        const token = response.data.token;
-        const user = response.data.user;
 
-        userStore.setUser(user, token);
+    axios
+        .post('/api/auth/login', userData)
+        .then((response) => {
+            const token = response.data.token;
+            const user = response.data.user;
 
-        router.push('/');
+            userStore.setUser(user, token);
 
-        toast.success(`you're now logged in!`);
-    } catch (error) {
-        if (error.response) {
-            toast.error(error.response.data.message || 'Invalid login credentials');
-        }
-    } finally {
-        loading.value = false;
-    }
+            router.push('/');
+
+            toast.success(`You're now logged in!`);
+        })
+        .finally(() => {
+            loading.value = false;
+        });
 };
 </script>
 

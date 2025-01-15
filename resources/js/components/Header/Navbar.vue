@@ -11,18 +11,14 @@ const userStore = useUserStore();
 
 const user = computed(() => userStore.user);
 
-const handleLogout = async () => {
-    try {
-        await axios.post('/api/auth/logout');
-
+const handleLogout = () => {
+    axios.post('/api/auth/logout').then(() => {
         userStore.clearUser();
 
         router.push('/login');
 
         toast.success('Logged out successfully!');
-    } catch (error) {
-        toast.error('Failed to sign out. Please try again.');
-    }
+    });
 };
 </script>
 
@@ -32,7 +28,6 @@ const handleLogout = async () => {
     >
         <div class="max-w-6xl flex flex-wrap lg:grid lg:grid-cols-3 basis-full items-center w-full mx-auto py-2.5">
             <div class="lg:order-1 flex items-center gap-x-3">
-                <!-- Logo -->
                 <router-link
                     class="flex-none rounded-md text-xl inline-block font-semibold focus:outline-none focus:opacity-80"
                     to="/"
@@ -66,11 +61,9 @@ const handleLogout = async () => {
                         <circle cx="13" cy="16.5214" r="5" class="fill-white" fill="currentColor" />
                     </svg>
                 </router-link>
-                <!-- End Logo -->
             </div>
 
             <div v-if="user" class="lg:order-4 flex justify-end items-center gap-x-1 sm:gap-x-2 ms-auto lg:ms-0">
-                <!-- Account Dropdown -->
                 <div
                     class="hs-dropdown inline-flex [--strategy:absolute] [--auto-close:inside] [--placement:bottom-right] relative text-start"
                 >
@@ -89,7 +82,6 @@ const handleLogout = async () => {
                         />
                     </button>
 
-                    <!-- Account Dropdown -->
                     <div
                         class="hs-dropdown-menu hs-dropdown-open:opacity-100 w-60 transition-[opacity,margin] duration opacity-0 hidden z-20 bg-white rounded-xl shadow-[0_10px_40px_10px_rgba(0,0,0,0.08)] dark:shadow-[0_10px_40px_10px_rgba(0,0,0,0.2)] dark:bg-neutral-900"
                         role="menu"
@@ -97,9 +89,9 @@ const handleLogout = async () => {
                         aria-labelledby="hs-pro-pnad"
                     >
                         <div class="p-1 border-b border-gray-200 dark:border-neutral-800">
-                            <a
+                            <router-link
                                 class="py-2 px-3 flex items-center gap-x-3 rounded-lg text-sm text-gray-800 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:focus:bg-neutral-800"
-                                href="../../pro/dashboard/user-profile-my-profile.html"
+                                to="/Profile"
                             >
                                 <img
                                     class="shrink-0 size-8 rounded-full"
@@ -112,12 +104,12 @@ const handleLogout = async () => {
                                         {{ user.name }}
                                     </span>
                                 </div>
-                            </a>
+                            </router-link>
                         </div>
                         <div class="p-1">
-                            <a
+                            <router-link
                                 class="flex items-center gap-x-3 py-2 px-3 rounded-lg text-sm text-gray-800 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:focus:bg-neutral-800"
-                                href="#"
+                                to="/Profile"
                             >
                                 <svg
                                     class="shrink-0 mt-0.5 size-4"
@@ -135,24 +127,7 @@ const handleLogout = async () => {
                                     <circle cx="12" cy="7" r="4" />
                                 </svg>
                                 My account
-                            </a>
-                        </div>
-                        <div class="px-4 py-3.5 border-y border-gray-200 dark:border-neutral-800">
-                            <!-- Switch/Toggle -->
-                            <div class="flex justify-between items-center">
-                                <label for="hs-pro-pnaddm" class="text-sm text-gray-800 dark:text-neutral-300"
-                                    >Dark mode</label
-                                >
-                                <div class="relative inline-block">
-                                    <input
-                                        data-hs-theme-switch
-                                        type="checkbox"
-                                        id="hs-pro-pnaddm"
-                                        class="relative w-11 h-6 p-px bg-gray-100 border-transparent text-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:ring-blue-600 disabled:opacity-50 disabled:pointer-events-none checked:bg-none checked:text-blue-600 checked:border-blue-600 focus:checked:border-blue-600 dark:bg-neutral-800 dark:border-neutral-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-neutral-900 before:inline-block before:size-5 before:bg-white checked:before:bg-white before:translate-x-0 checked:before:translate-x-full before:rounded-full before:shadow before:transform before:ring-0 before:transition before:ease-in-out before:duration-200 dark:before:bg-neutral-400 dark:checked:before:bg-white"
-                                    />
-                                </div>
-                            </div>
-                            <!-- End Switch/Toggle -->
+                            </router-link>
                         </div>
                         <div class="p-1">
                             <a
@@ -163,12 +138,9 @@ const handleLogout = async () => {
                             </a>
                         </div>
                     </div>
-                    <!-- End Account Dropdown -->
                 </div>
-                <!-- End Account Dropdown -->
 
                 <div class="lg:hidden">
-                    <!-- Collapse Button Trigger -->
                     <button
                         type="button"
                         class="hs-collapse-toggle inline-flex justify-center items-center w-7 h-[38px] text-start border border-white/20 text-white rounded-lg shadow-sm align-middle hover:bg-white/10 disabled:opacity-50 focus:outline-none focus:bg-white/10"
@@ -195,13 +167,10 @@ const handleLogout = async () => {
                             <circle cx="12" cy="19" r="1" />
                         </svg>
                     </button>
-                    <!-- End Collapse Button Trigger -->
                 </div>
             </div>
 
-            <!-- Nav Links -->
             <div class="lg:order-2 basis-full grow lg:basis-auto lg:ms-5">
-                <!-- Collapse -->
                 <div
                     id="hs-pro-dmh"
                     class="hs-collapse hidden overflow-hidden transition-all duration-300 basis-full grow lg:block border-b border-white/20 lg:border-0"
@@ -250,9 +219,7 @@ const handleLogout = async () => {
                         </div>
                     </div>
                 </div>
-                <!-- End Collapse -->
             </div>
-            <!-- End Nav Links -->
         </div>
     </header>
     <div

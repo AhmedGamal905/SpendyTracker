@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
 class AuthController extends Controller
 {
@@ -16,7 +17,7 @@ class AuthController extends Controller
             'name' => [
                 'required',
                 'string',
-                'max:255',
+                'max:25',
             ],
             'email' => [
                 'required',
@@ -41,7 +42,7 @@ class AuthController extends Controller
         return response()->json([
             'token' => $token,
             'user' => $user,
-        ], 201);
+        ], Response::HTTP_CREATED);
     }
 
     public function generateToken(Request $request)
@@ -64,7 +65,7 @@ class AuthController extends Controller
         return response()->json([
             'token' => $token,
             'user' => $user,
-        ], 200);
+        ], Response::HTTP_OK);
     }
 
     public function logout(Request $request)
@@ -73,6 +74,63 @@ class AuthController extends Controller
 
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'You have been successfully logged out.'], 200);
+        return response()->json(['message' => 'You have been successfully logged out.'], Response::HTTP_OK);
+    }
+
+    public function deleteAccount(Request $request)
+    {
+        $user = $request->user();
+
+        $request->user()->tokens()->delete();
+
+        $user->delete();
+
+        return response()->json(['message' => 'Account deleted successfully.'], Response::HTTP_OK);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:25',
+            'email' => 'required|email|unique:users,email,'.$request->user()->id,
+        ]);
+
+        $user = $request->user();
+
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+        ]);
+
+        $updatedUser = $user->fresh();
+
+        return response()->json([
+            'message' => 'Profile updated successfully.',
+            'user' => $updatedUser,
+        ], Response::HTTP_OK);
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8',
+        ]);
+
+        $user = $request->user();
+
+        if (! Hash::check($request->current_password, $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['The provided current password is incorrect.'],
+            ]);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->new_password),
+        ]);
+
+        return response()->json([
+            'message' => 'Password updated successfully.',
+        ], Response::HTTP_OK);
     }
 }

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { computed, onMounted, ref } from 'vue';
 import { useToast } from 'vue-toast-notification';
 import { JellyfishLoader } from 'vue3-spinner';
+import Delete from '../components/Buttons/Delete.vue';
 
 const loading = ref(false);
 const expenses = ref([]);
@@ -31,36 +32,34 @@ const isUpdateFormValid = computed(() => {
     return updateForm.value.category_id && updateForm.value.amount && updateForm.value.description;
 });
 
-onMounted(async () => {
+onMounted(() => {
     loading.value = true;
-    try {
-        const expensesResponse = await axios.get('/api/expenses');
-        const categoriesResponse = await axios.get('/api/categories');
-        expenses.value = expensesResponse.data.data;
-        categories.value = categoriesResponse.data.data;
-        nextPage.value = expensesResponse.data.links.next;
-    } catch (error) {
-        if (error.response) {
-            toast.error(error.response.data.message || 'Something went wrong! Try to refresh');
-        }
-    } finally {
-        loading.value = false;
-    }
+    axios
+        .get('/api/expenses')
+        .then((expensesResponse) => {
+            expenses.value = expensesResponse.data.data;
+            nextPage.value = expensesResponse.data.links.next;
+            return axios.get('/api/categories');
+        })
+        .then((categoriesResponse) => {
+            categories.value = categoriesResponse.data.data;
+        })
+        .finally(() => {
+            loading.value = false;
+        });
 });
 
-const handleDelete = async (expenseId) => {
+const handleDelete = (expenseId) => {
     loading.value = true;
-    try {
-        await axios.delete(`/api/expenses/${expenseId}`);
-        expenses.value = expenses.value.filter((expense) => expense.id !== expenseId);
-        toast.success('Your expense was deleted!');
-    } catch (error) {
-        if (error.response) {
-            toast.error(error.response.data.message || 'Something went wrong');
-        }
-    } finally {
-        loading.value = false;
-    }
+    axios
+        .delete(`/api/expenses/${expenseId}`)
+        .then(() => {
+            expenses.value = expenses.value.filter((expense) => expense.id !== expenseId);
+            toast.success('Your expense was deleted!');
+        })
+        .finally(() => {
+            loading.value = false;
+        });
 };
 
 const getCategoryName = (categoryId) => {
@@ -68,7 +67,7 @@ const getCategoryName = (categoryId) => {
     return category ? category.name : 'Unknown';
 };
 
-const createExpense = async () => {
+const createExpense = () => {
     if (!createForm.value.category_id || !createForm.value.amount || !createForm.value.description) {
         toast.error('Please fill in all fields!');
         return;
@@ -79,38 +78,35 @@ const createExpense = async () => {
         amount: createForm.value.amount,
         description: createForm.value.description,
     };
-    try {
-        const response = await axios.post('/api/expenses', formData);
-        expenses.value.push(response.data.data);
-        createForm.value.category_id = '';
-        createForm.value.amount = '';
-        createForm.value.description = '';
-        showCreateForm.value = false;
-        toast.success('New income saved!');
-    } catch (error) {
-        if (error.response) {
-            toast.error(error.response.data.message || 'Something went wrong');
-        }
-    } finally {
-        loading.value = false;
-    }
+    axios
+        .post('/api/expenses', formData)
+        .then((response) => {
+            expenses.value.push(response.data.data);
+            createForm.value.category_id = '';
+            createForm.value.amount = '';
+            createForm.value.description = '';
+            showCreateForm.value = false;
+            toast.success('New income saved!');
+        })
+        .finally(() => {
+            loading.value = false;
+        });
 };
 
-const loadMore = async () => {
+const loadMore = () => {
     loading.value = true;
-    try {
-        if (nextPage.value) {
-            const response = await axios.get(`${nextPage.value}`);
-            expenses.value.push(...response.data.data);
-            nextPage.value = response.data.links.next;
-        } else {
-            toast.error('No next page');
-        }
-    } catch (error) {
-        if (error.response) {
-            toast.error(error.response.data.message || 'Something went wrong! Try to refresh');
-        }
-    } finally {
+    if (nextPage.value) {
+        axios
+            .get(`${nextPage.value}`)
+            .then((response) => {
+                expenses.value.push(...response.data.data);
+                nextPage.value = response.data.links.next;
+            })
+            .finally(() => {
+                loading.value = false;
+            });
+    } else {
+        toast.error('No next page');
         loading.value = false;
     }
 };
@@ -130,7 +126,7 @@ const prepareFormForUpdate = (expense) => {
     showCreateForm.value = false;
 };
 
-const updateExpense = async () => {
+const updateExpense = () => {
     if (
         !updateForm.value.id ||
         !updateForm.value.amount ||
@@ -147,24 +143,22 @@ const updateExpense = async () => {
         description: updateForm.value.description,
     };
 
-    try {
-        const response = await axios.put(`/api/expenses/${updateForm.value.id}`, formData);
-        expenses.value = expenses.value.map((expense) =>
-            expense.id === updateForm.value.id ? response.data.data : expense,
-        );
-        updateForm.value.id = '';
-        updateForm.value.category_id = '';
-        updateForm.value.amount = '';
-        updateForm.value.description = '';
-        showUpdateForm.value = false;
-        toast.success('Expense updated!');
-    } catch (error) {
-        if (error.response) {
-            toast.error(error.response.data.message || 'Something went wrong');
-        }
-    } finally {
-        loading.value = false;
-    }
+    axios
+        .put(`/api/expenses/${updateForm.value.id}`, formData)
+        .then((response) => {
+            expenses.value = expenses.value.map((expense) =>
+                expense.id === updateForm.value.id ? response.data.data : expense,
+            );
+            updateForm.value.id = '';
+            updateForm.value.category_id = '';
+            updateForm.value.amount = '';
+            updateForm.value.description = '';
+            showUpdateForm.value = false;
+            toast.success('Expense updated!');
+        })
+        .finally(() => {
+            loading.value = false;
+        });
 };
 </script>
 
@@ -449,7 +443,7 @@ const updateExpense = async () => {
                         </button>
                     </td>
                     <td class="size-px whitespace-nowrap px-4 py-1">
-                        <deleteButton-component :id="expense.id" @delete="handleDelete" />
+                        <Delete :id="expense.id" @delete="handleDelete" />
                     </td>
                 </tr>
             </tbody>

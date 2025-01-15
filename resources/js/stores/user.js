@@ -23,5 +23,9 @@ export const useUserStore = defineStore('user', {
         isAuthenticated() {
             return this.user !== null && this.token !== null;
         },
+        updateUser(newUserData) {
+            this.user = newUserData;
+            localStorage.setItem('user', JSON.stringify(newUserData));
+        },
     },
 });
