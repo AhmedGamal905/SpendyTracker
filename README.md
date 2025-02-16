@@ -1,7 +1,3 @@
-Here’s a revised and expanded version of your README for the Spendy Tracker project:
-
----
-
 # Spendy Tracker
 
 **Spendy Tracker** is a web application designed to simplify personal finance management. It helps users effectively track their income and expenses, providing an intuitive and efficient way to manage their budget. Built using PHP, Laravel, HTML, CSS, JavaScript, Vue.js, and MySQL, Spendy Tracker offers a reliable, user-friendly platform to monitor financial activities and keep track of budgeting goals.
